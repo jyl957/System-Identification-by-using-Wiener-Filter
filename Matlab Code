@@ -1,0 +1,60 @@
+clc; clear; close all;
+
+
+load('sysid.mat');  
+
+% Find the optimum order
+Ns = 100;
+Nf_max = 20;
+xiw = [];
+
+a = zeros(1,Nf_max);
+k = 0;
+
+for Nf = 1:Nf_max
+
+    [y,wopt] = systemid(x,d,Ns,Nf);
+    xiw(Nf) = var(d-y);
+ 
+end
+
+L = 1:Nf_max;
+
+figure(1); 
+scatter(L,xiw)
+xlabel('filter order L')
+ylabel('ξ(w)|w=wopt')
+axis tight;
+
+
+% Plot the MSE in time domain
+Nf = 7;                                         % filter order 
+[y7,wopt7] = systemid(x,d,Ns,Nf);
+
+disp(wopt7);
+
+figure(2);
+plot(d);
+hold on, grid
+plot(y,'r--')
+xlabel('time sample')
+ylabel('value')
+legend('Plant output', 'Model output');
+title(['Time domain,  MSE: ' num2str(var(d-y7))]);  % calculate the MSE
+
+%%  Function of System Identification by using Wiener Filter
+function [y,wopt] = systemid(x,d,Ns,Nf) 
+
+X = zeros(length(x),Nf);
+X(1,1) = x(1);
+for i = 2:length(x)
+    X(i,:) = [x(i) X(i-1, 1:end-1)];
+end
+
+ 
+R = 1/(Ns) * X' * X;  
+p = 1/(Ns) * X' * d;   
+wopt = inv(R)*p;                                  % calculate the optimum weights
+
+y = X * wopt;
+end
